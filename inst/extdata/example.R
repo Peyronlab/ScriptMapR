@@ -1,4 +1,4 @@
-################example script################
+################ example script################
 library(survival)
 setwd("./")
 
@@ -72,9 +72,9 @@ if (pval < 0.05) {
 }
 
 
-#simple loop example
-count=0
+# simple loop example
+count = 0
 for (j in old[old_indices]) {
-  count = count + 1
+    count = count + 1
 }
 

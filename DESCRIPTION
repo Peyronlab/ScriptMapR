@@ -1,10 +1,10 @@
 Package: ScriptMapR
 Type: Package
 Title: R Script Visualization in Cytoscape
-Version: 0.0.1
+Version: 0.0.2
 Author: Raphael Bonnet [aut, cre], Marion Guernoté [ctb], Terry Gouin [ctb], Maxime Laurens [ctb], Thibault Meekel [ctb], Jean-François Peyron[aut,ths]
 Maintainer: Raphaël Bonnet <raphael.bonnet@univ-cotedazur.fr>
-Description: Displays the content of a R script into the Cytoscape network-visualization app.
+Description: Displays the content of a R script into the 'Cytoscape' network-visualization app <https://cytoscape.org/>.
 BugReports: https://github.com/peyronlab/ScriptMapR/issues
 Imports:
     RCy3,

@@ -7,10 +7,10 @@
 #' @import utils
 #' @import grDevices
 #'
-#' @title Display content of input script in Cytoscape
+#' @title Display content of input script in 'Cytoscape'
 #' @description
-#' This function allows the user to represent the content of a given script in Cytoscape (Cytoscape.org).
-#' Therefore it requires to have a functioning version of Cytoscape 3.6.1 or greater.
+#' This function allows the user to represent the content of a given script in 'Cytoscape' (<https://cytoscape.org/>).
+#' Therefore it requires to have a functioning version of 'Cytoscape' 3.6.1 or greater.
 #'
 #' Each variable is represented as a node and edges represent commands that call the variable.
 #' Functions can also be represented.
@@ -52,7 +52,7 @@
 #' # load example script path
 #' file.path <- system.file("extdata", "example.R", package = "ScriptMapR")
 #'
-#' # scriptmapr(file.path)
+#' scriptmapr(path=file.path)
 #'
 #' @return Cytoscape network visualization
 
@@ -63,15 +63,16 @@ if (!file.exists(path)) {
   stop("File not found, please check current working directory")
 }
 
-chkpnt=readline(prompt="Script is going to be tidy by formatR::tidy_file(), continue ? (n/Y)")
-if (chkpnt%in%c('Y',"y","","Yes","yes")){
+
+chkpnt=readline(prompt="Script is going to be tidy by formatR::tidy_file(), continue ? (n/y)")
+if (chkpnt%in%c('Y',"y","Yes","yes")){
   log.path=paste(tempdir(),"test.log",sep="")
   con <- file(log.path)
   sink(con, append=TRUE)
   sink(con, append=TRUE, type="message")
-tidy_file(path, width.cutoff = 500)
-sink()
-sink(type="message")
+  tidy_file(path, width.cutoff = 500)
+  closeAllConnections()
+
 log=readLines(log.path)
 if (sum(grepl("InLiNe_IdEnTiFiEr",log))>0){
   cat(readLines(log.path), sep="\n")
@@ -79,11 +80,11 @@ if (sum(grepl("InLiNe_IdEnTiFiEr",log))>0){
   stop("inline comment detected, correct specified line and retry \n see https://yihui.org/formatr/#the-pipe-operator section6")
   }
   } else {
-  stop('Tidying aborted')
+  message('Tidying aborted')
+    return(NULL)
   }
 
 p_data = parse(path)
-
 text = unlist(strsplit(as.character(p_data), "\n"))
 check_err = lapply(seq_along(text), function(x) {
   if (nchar(text[x]) > 500) {
@@ -92,9 +93,19 @@ check_err = lapply(seq_along(text), function(x) {
 })
 
 #checking Cytoscape connection
-tryCatch(cytoscapePing(),
-         error = function(e) {stop('You must open Cytoscape before running this function')}
-         )
+result = tryCatch({
+  cytoscapePing()
+}, error = function(e) {
+  message('You must open Cytoscape before running this function')
+  return(1)
+
+})
+
+
+if (!is.null(result)){
+  #quit function
+  return(NULL)
+}
 
 make_edge = function(target, attr = "", source, interaction = "interacts_with", weight = 1, cmd, id = NULL, extra = "", edge_lgth = 1, all_groups = NULL, edgtype = "SOLID", reverse.edg = FALSE, indices = "") {
   #function to create edges given specific arguments

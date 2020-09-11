@@ -2,7 +2,7 @@
 % Please edit documentation in R/scriptmapr.R
 \name{scriptmapr}
 \alias{scriptmapr}
-\title{Display content of input script in Cytoscape}
+\title{Display content of input script in 'Cytoscape'}
 \usage{
 scriptmapr(path)
 }
@@ -13,8 +13,8 @@ scriptmapr(path)
 Cytoscape network visualization
 }
 \description{
-This function allows the user to represent the content of a given script in Cytoscape (Cytoscape.org).
-Therefore it requires to have a functioning version of Cytoscape 3.6.1 or greater.
+This function allows the user to represent the content of a given script in 'Cytoscape' (<https://cytoscape.org/>).
+Therefore it requires to have a functioning version of 'Cytoscape' 3.6.1 or greater.
 
 Each variable is represented as a node and edges represent commands that call the variable.
 Functions can also be represented.
@@ -49,6 +49,6 @@ User created functions are represented and pooled as a group, collapsed and extr
 # load example script path
 file.path <- system.file("extdata", "example.R", package = "ScriptMapR")
 
-# scriptmapr(file.path)
+scriptmapr(path=file.path)
 
 }
