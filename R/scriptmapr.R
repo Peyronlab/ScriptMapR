@@ -448,8 +448,12 @@ brackets = lapply(seq_along(xy.list), FUN = function(x) {
       imb = TRUE
     }
   }
+
+  id_rm=which(xy.list[[x]]$text=="in")
+  if( length(id_rm)>0){xy.list[[x]]$text[id_rm]="="}
   patt = str_detect(paste(xy.list[[x]]$text, collapse = ""), "\\[")
   text = paste(xy.list[[x]]$text, collapse = "")
+
   if ("LBB" %in% xy.list[[x]]$token) {
     i1 = gregexpr("\\[{2}", paste(xy.list[[x]]$text, collapse = ""))
     i2 = gregexpr("\\]{2}", paste(xy.list[[x]]$text, collapse = ""))
