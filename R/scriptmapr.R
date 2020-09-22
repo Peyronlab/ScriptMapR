@@ -64,9 +64,16 @@ if (!file.exists(path)) {
 }
 
 
+
+chkpnt=readline(prompt=paste("File is going to be copied at ",paste(tempdir(),basename(path),sep='/'), " Continue? (n/y)"))
+if (chkpnt%in%c('Y',"y","Yes","yes")){
 b=file.copy(path,tempdir())
 script_name=path
 path=paste(tempdir(),basename(path),sep='/')
+} else {
+  message('Aborting')
+  return(NULL)
+  }
 
 if (b==TRUE){
   message('tmp file created at ',path)
