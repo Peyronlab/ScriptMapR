@@ -101,11 +101,12 @@ result = tryCatch({
 
 })
 
-
 if (!is.null(result)){
+if (result==1){
   #quit function
   return(NULL)
 }
+  }
 
 make_edge = function(target, attr = "", source, interaction = "interacts_with", weight = 1, cmd, id = NULL, extra = "", edge_lgth = 1, all_groups = NULL, edgtype = "SOLID", reverse.edg = FALSE, indices = "") {
   #function to create edges given specific arguments
