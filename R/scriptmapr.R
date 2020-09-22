@@ -64,9 +64,15 @@ if (!file.exists(path)) {
 }
 
 
-chkpnt=readline(prompt="Script is going to be tidy by formatR::tidy_file(), continue ? (n/y)")
-if (chkpnt%in%c('Y',"y","Yes","yes")){
-  log.path=paste(tempdir(),"test.log",sep="")
+b=file.copy(path,tempdir())
+script_name=path
+path=paste(tempdir(),basename(path),sep='/')
+
+if (b==TRUE){
+  message('tmp file created at ',path)
+}
+
+  log.path=paste(tempdir(),"/test.log",sep="")
   con <- file(log.path)
   sink(con, append=TRUE)
   sink(con, append=TRUE, type="message")
@@ -79,10 +85,7 @@ if (sum(grepl("InLiNe_IdEnTiFiEr",log))>0){
   message("Tidying failed:")
   stop("inline comment detected, correct specified line and retry \n see https://yihui.org/formatr/#the-pipe-operator section6")
   }
-  } else {
-  message('Tidying aborted')
-    return(NULL)
-  }
+
 
 p_data = parse(path)
 text = unlist(strsplit(as.character(p_data), "\n"))
@@ -2000,10 +2003,10 @@ all_edges$edgecol = edgecol
 
 #preparing network
 collection = "ScriptMapR"
-title = paste(path, as.POSIXct(Sys.time()))
-style.name = gsub(".R", "", basename(path))
+title = paste(script_name, as.POSIXct(Sys.time()))
+style.name = gsub(".R", "", basename(script_name))
 style.name = "ScriptMapR"
-ids = getNetworkList()[which(grepl(path, getNetworkList(), perl = TRUE))]
+ids = getNetworkList()[which(grepl(script_name, getNetworkList(), perl = TRUE))]
 lapply(seq_along(ids), function(x) {
   deleteNetwork(ids[x])
 })
