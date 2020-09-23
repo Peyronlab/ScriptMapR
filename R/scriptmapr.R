@@ -2039,6 +2039,7 @@ scriptmapr = function(path) {
 
   #creating network
   message("Network created")
+  setCurrentView()
   createNetworkFromDataFrames(nodes, all_edges, title = title, collection = collection)
   mappings = list(
     nodeLabels = mapVisualProperty(visual.prop = "NODE_LABEL", table.column = "name", mapping.type = "p"),
