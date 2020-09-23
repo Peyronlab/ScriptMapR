@@ -2038,8 +2038,19 @@ scriptmapr = function(path) {
   })
 
   #creating network
+  diplayed = tryCatch({
+    createNetworkFromDataFrames(nodes, all_edges, title = title, collection = collection)
+    return(0)
+  }, error = function(e) {
+    message('Cytoscape connection error, please retry.')
+    return(1)
+
+  })
+  if (diplayed==1){
+    return(NULL)
+  }
   message("Network created")
-  createNetworkFromDataFrames(nodes, all_edges, title = title, collection = collection)
+
   nview=getNetworkViews(network = title)
   mappings = list(
     nodeLabels = mapVisualProperty(visual.prop = "NODE_LABEL", table.column = "name", mapping.type = "p"),
