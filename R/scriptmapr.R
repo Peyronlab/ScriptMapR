@@ -2037,6 +2037,8 @@ scriptmapr = function(path) {
     deleteNetwork(ids[x])
   })
 
+  #reset default style
+  commandsPOST("vizmap apply styles=\"default\"")
   #creating network
   diplayed = tryCatch({
     createNetworkFromDataFrames(nodes, all_edges, title = title, collection = collection)
@@ -2182,5 +2184,6 @@ scriptmapr = function(path) {
     s=selectNodes(listGroups()$groups, "SUID", preserve.current.selection = T)
   }
   setCurrentView(nview)
+
 }
 
