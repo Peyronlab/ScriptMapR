@@ -2039,8 +2039,8 @@ scriptmapr = function(path) {
 
   #creating network
   message("Network created")
-  setCurrentView()
   createNetworkFromDataFrames(nodes, all_edges, title = title, collection = collection)
+  nview=getNetworkViews(network = title)
   mappings = list(
     nodeLabels = mapVisualProperty(visual.prop = "NODE_LABEL", table.column = "name", mapping.type = "p"),
     nodecolor = mapVisualProperty(visual.prop = "NODE_FILL_COLOR", table.column = "colors", mapping.type = "p"),
@@ -2162,6 +2162,6 @@ scriptmapr = function(path) {
   if (length(listGroups()$groups) > 0) {
     s=selectNodes(listGroups()$groups, "SUID", preserve.current.selection = T)
   }
-
+  setCurrentView(nview)
 }
 
