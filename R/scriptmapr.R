@@ -65,8 +65,8 @@ scriptmapr = function(path) {
 
 
 
-  chkpnt=readline(prompt=paste("File is going to be copied at ",paste(tempdir(),basename(path),sep='/'), " Continue? (n/y)"))
-  if (chkpnt%in%c('Y',"y","Yes","yes")){
+  chkpnt=readline(prompt=paste("File is going to be copied at ",paste(tempdir(),basename(path),sep='/'), " Continue? (Y/n)"))
+  if (chkpnt%in%c("",'Y',"y","Yes","yes")){
     b=file.copy(path,tempdir())
     script_name=path
     path=paste(tempdir(),basename(path),sep='/')
@@ -79,22 +79,29 @@ scriptmapr = function(path) {
     message('tmp file created at ',path)
   }
 
-  log.path=paste(tempdir(),"/test.log",sep="")
-  con <- file(log.path)
-  sink(con, append=TRUE)
-  sink(con, append=TRUE, type="message")
+  log <- vector('character')
+  con    <- textConnection('log', 'wr', local = TRUE)
+  sink(con,type = 'message',append = FALSE)
   tidy_file(path, width.cutoff = 500)
-  closeAllConnections()
+  sink(type = 'message')
+  close(con)
 
-  log=readLines(log.path)
+  # log.path=paste(tempdir(),"/test.log",sep="")
+  # con <- file(log.path)
+  # sink(con, append=TRUE)
+  # sink(con, append=TRUE, type="message")
+  # tidy_file(path, width.cutoff = 500)
+
+  # log=readLines(log.path)
   if (sum(grepl("InLiNe_IdEnTiFiEr",log))>0){
-    cat(readLines(log.path), sep="\n")
+    # cat(readLines(log.path), sep="\n")
+    cat(log,sep = '\n')
     message("Tidying failed:")
     stop("inline comment detected, correct specified line and retry \n see https://yihui.org/formatr/#the-pipe-operator section6")
   }
 
-
   p_data = parse(path)
+
   text = unlist(strsplit(as.character(p_data), "\n"))
   check_err = lapply(seq_along(text), function(x) {
     if (nchar(text[x]) > 500) {
@@ -111,12 +118,6 @@ scriptmapr = function(path) {
 
   })
 
-  if (!is.null(result)){
-    if (result==1){
-      #quit function
-      return(NULL)
-    }
-  }
 
   make_edge = function(target, attr = "", source, interaction = "interacts_with", weight = 1, cmd, id = NULL, extra = "", edge_lgth = 1, all_groups = NULL, edgtype = "SOLID", reverse.edg = FALSE, indices = "") {
     #function to create edges given specific arguments
@@ -127,14 +128,24 @@ scriptmapr = function(path) {
       group_attr = paste(unlist(groups[id]), collapse = ",")
     }
     id = as.character(id)
-    data.frame(target = target, attr = attr, source = source, interaction = interaction, weight = weight, cmd = cmd, id = id, extra, edge_lgth = edge_lgth, group_attr = group_attr, edgtype = edgtype, reverse.edg = reverse.edg, indices = indices,stringsAsFactors = F)
+    data.frame(target = target, attr = attr, source = source, interaction = interaction, weight = weight, cmd = cmd, id = id, extra, edge_lgth = edge_lgth, group_attr = group_attr, edgtype = edgtype, reverse.edg = reverse.edg, indices = indices,stringsAsFactors = FALSE)
 
   }
   # parse script
   parsed = getParseData(p_data)
 
+  if (!is.null(result)){
+    if (result==1){
+      #quit function
+      return(NULL)
+    }
+  } else if (!is.null(parsed)){
+    return(NULL)
+  }
+
   # removing empty lines
   parsed = parsed[-c(which(parsed$token %in% c("expr", "equal_assign", "forcond", "expr_or_assign_or_help"))), ]
+
   xy.list <- split(parsed, f = parsed$line1)
 
   # extracting comments could be used in tooltips
