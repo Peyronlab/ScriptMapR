@@ -2062,14 +2062,18 @@ scriptmapr = function(path) {
     edgtype = mapVisualProperty(visual.prop = "EDGE_LINE_TYPE", table.column = "edgtype", mapping.type = "p"))
 
   def = list(NODE_BORDER_WIDTH = 4, EDGE_LABEL_COLOR = "#6600CC", EDGE_TARGET_ARROW_SHAPE = "ARROW", NODE_SHAPE = "ROUND_RECTANGLE")
-
+  message("Network mappings set")
   if (style.name %in% getVisualStyleNames()) {
+    message("Network mappings style exists")
     setVisualStyle(style.name, network = title)
     res = lapply(seq_along(mappings), function(x) {
       updateStyleMapping(style.name, mappings[[x]])
     })
     updateStyleDefaults(style.name, def)
+    message("Network mappings done")
+
   } else {
+    message("Network mappings style create")
     l = length(getVisualPropertyNames())
     vp_names = getVisualPropertyNames()
     cy_defaults = lapply(seq_len(l), function(x) {
@@ -2079,6 +2083,7 @@ scriptmapr = function(path) {
     defaults = c(cy_defaults[which(!(names(cy_defaults) %in% names(def)))], def)
     createVisualStyle(style.name, defaults = defaults, mappings = mappings)
     lockNodeDimensions(FALSE, style.name)
+    message("Network mappings done")
 
   }
 
@@ -2091,7 +2096,7 @@ scriptmapr = function(path) {
   group_colors <- colorRampPalette(c("lightgrey", "black"))(nrow(all_edges))[inds]
   nodedata <- getTableColumns("node")
   edgedata <- getTableColumns("edge")
-
+  message("Getting table data")
   # apply reverse ifs else if reorder HARDCODED RESHAPE OF ALLEDGES
   if (length(which(edgedata$reverse.edg == TRUE))>0){
     selectEdges(edgedata$SUID[which(edgedata$reverse.edg == TRUE)])
@@ -2099,6 +2104,7 @@ scriptmapr = function(path) {
     setEdgeSourceArrowShapeBypass(edge.names = edgedata$`shared name`[which(edgedata$reverse.edg == TRUE)], new.shapes = "ARROW", network = title)
     clearSelection()
   }
+  message("Reversing edges")
   if (length(which(edgedata$edgtype == "LONG_DASH")) > 0) {
     dashed = selectEdges(edgedata$SUID[which(edgedata$edgtype == "LONG_DASH")])
   }
@@ -2109,12 +2115,14 @@ scriptmapr = function(path) {
   #bypass if edges colors
   s=selectNodes(c("IF", "ELSE IF", "ELSE"), by.col = "name")
   conds.ifs = selectEdgesAdjacentToSelectedNodes()
+  message("color bypass start")
 
   if (length(conds.ifs) > 0 & length(conds.ifs$edges) > 0) {
     conds.ifs$edges = conds.ifs$edges[-c(which(conds.ifs$edges %in% dashed$edges))]
     setEdgeColorBypass(conds.ifs$edges, "#FED000")
   }
   clearSelection()
+  message("color bypass done")
 
   #bypass loop edges colors
   s=selectNodes(c("FOR", "WHILE"), by.col = "name")
