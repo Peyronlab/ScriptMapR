@@ -2040,10 +2040,10 @@ scriptmapr = function(path) {
   #creating network
   diplayed = tryCatch({
     createNetworkFromDataFrames(nodes, all_edges, title = title, collection = collection)
-    return(0)
+    diplayed=0
   }, error = function(e) {
     message('Cytoscape connection error, please retry.')
-    return(1)
+    diplayed=1
 
   })
   if (diplayed==1){
