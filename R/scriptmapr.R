@@ -2033,11 +2033,10 @@ scriptmapr = function(path) {
   style.name = gsub(".R", "", basename(script_name))
   style.name = "ScriptMapR"
   ids = getNetworkList()[which(grepl(script_name, getNetworkList(), perl = TRUE))]
-  if (length(ids)!=length(getNetworkList())){
   lapply(seq_along(ids), function(x) {
-  deleteNetwork(ids[x])
+    deleteNetwork(ids[x])
   })
-}
+
   #reset default style
   # commandsPOST("vizmap apply styles=\"default\"")
   #creating network
