@@ -244,6 +244,7 @@ scriptmapr = function(path) {
   }
 
   ############################ PACKAGE LOAD
+  packages=gsub("\"|\'","",packages)
   bool_pkg=lapply(seq_along(packages) ,FUN = function(x){
     res=tryCatch(require(packages[x], character.only = TRUE), error = function(e) {
       warning('Some packages required in the script are not installed yet')}
@@ -334,7 +335,7 @@ scriptmapr = function(path) {
   # packages = c(packages, unlist(to_add))
   if (length(packages) > 0) {
     l.packages = rep("library", length(packages))
-    pkg_edges = rbind(make_edge(target = "Packages", attr = "", source = "Session", interaction = "env.setup", weight = 1, id = 0, cmd = "", all_groups = groups), make_edge(target = packages, attr = "", source = "Packages", interaction = "wd.init", weight = 1, id = 0, cmd = "library()", all_groups = groups))
+    pkg_edges = rbind(make_edge(target = "Loaded pkgs", attr = "", source = "Session", interaction = "env.setup", weight = 1, id = 0, cmd = "", all_groups = groups), make_edge(target = packages, attr = "", source = "Loaded pkgs", interaction = "wd.init", weight = 1, id = 0, cmd = "library()", all_groups = groups))
     packages = cbind(l.packages, packages)
   }
 
@@ -510,7 +511,8 @@ scriptmapr = function(path) {
       if (length(eq.id) > 0) {
         if (eq.id > n) {
           # print(x)
-          return(make_edge(target = r, attr = attr, source = r.src, interaction = c("subset"), weight = 1, cmd = cmd, id = x, edge_lgth = str, all_groups = groups, extra = r.src))
+          #removed return for function(x)[y]
+          make_edge(target = r, attr = attr, source = r.src, interaction = c("subset"), weight = 1, cmd = cmd, id = x, edge_lgth = str, all_groups = groups, extra = r.src)
         }
       }
       if (str_detect(r.src, "\\)")) {
@@ -597,6 +599,11 @@ scriptmapr = function(path) {
   # extract name of function called in first instance ex setwd() or print() or plot()
   strtfunc = lapply(seq_along(xy.list), FUN = function(x) {
     m = which(xy.list[[x]]$token == "SYMBOL_FUNCTION_CALL")
+    if (is.null(m)){return(NULL)}
+    rm=which(xy.list[[x]]$text[m]=='names')
+    if (length(rm)>0){
+      m=m[-c(rm)]
+    }
     attr = ""
     edgtype = "SOLID"
     edg2 = NULL
@@ -793,6 +800,11 @@ scriptmapr = function(path) {
             if (grepl("^\\$", edg[i], perl = TRUE)) {
               edg[i] = gsub("\\$", "", edg[i])
               edg = edg[-c(i)]
+            }
+            # case names(y) to names-y
+            if (grepl("\\(|\\)", edg[i], perl = TRUE)) {
+              edg[i] = gsub("\\(", "-", edg[i])
+              edg[i] = gsub("\\)", "", edg[i])
             }
           }
         }
@@ -1094,6 +1106,16 @@ scriptmapr = function(path) {
 
         }
 
+      } else if (!is.null(strtfunc[[x]])) {
+
+        if (nrow(strtfunc[[x]]) == 1) {
+          make_edge(target = strtfunc[[x]]$target, attr = "", source = strtfunc[[x]]$source, interaction = "IFcondition", weight = 1, id = x, cmd = paste(xy.list[[x]]$text, collapse = ""), all_groups = groups, edgtype = "LONG_DASH", extra = strtfunc[[x]]$extra)
+
+        } else {
+          make_edge(target = strtfunc[[x]]$target[1], attr = "", source = strtfunc[[x]]$source[1], interaction = "IFcondition", weight = 1, id = x, cmd = paste(xy.list[[x]]$text, collapse = ""), all_groups = groups, edgtype = "LONG_DASH", extra = strtfunc[[x]]$extra[1])
+
+        }
+
       }
 
     }
@@ -1177,6 +1199,16 @@ scriptmapr = function(path) {
 
         }
 
+      }else if (!is.null(strtfunc[[x]])) {
+
+        if (nrow(strtfunc[[x]]) == 1) {
+          make_edge(target = strtfunc[[x]]$target, attr = "", source = strtfunc[[x]]$source, interaction = "IFcondition", weight = 1, id = x, cmd = paste(xy.list[[x]]$text, collapse = ""), all_groups = groups, edgtype = "LONG_DASH", extra = strtfunc[[x]]$extra)
+
+        } else {
+          make_edge(target = strtfunc[[x]]$target[1], attr = "", source = strtfunc[[x]]$source[1], interaction = "IFcondition", weight = 1, id = x, cmd = paste(xy.list[[x]]$text, collapse = ""), all_groups = groups, edgtype = "LONG_DASH", extra = strtfunc[[x]]$extra[1])
+
+        }
+
       }
     }
   })
@@ -1225,6 +1257,16 @@ scriptmapr = function(path) {
         } else {
           target.else = complex_assign[[x]]$target[1]
           make_edge(target = target.else, attr = "", source = trg, interaction = "ELSEcondition", weight = 1, id = x, cmd = paste(xy.list[[x]]$text, collapse = ""), all_groups = groups, edgtype = "LONG_DASH", extra = complex_assign[[x]]$extra[1])
+
+        }
+
+      }else if (!is.null(strtfunc[[x]])) {
+
+        if (nrow(strtfunc[[x]]) == 1) {
+          make_edge(target = strtfunc[[x]]$target, attr = "", source = strtfunc[[x]]$source, interaction = "IFcondition", weight = 1, id = x, cmd = paste(xy.list[[x]]$text, collapse = ""), all_groups = groups, edgtype = "LONG_DASH", extra = strtfunc[[x]]$extra)
+
+        } else {
+          make_edge(target = strtfunc[[x]]$target[1], attr = "", source = strtfunc[[x]]$source[1], interaction = "IFcondition", weight = 1, id = x, cmd = paste(xy.list[[x]]$text, collapse = ""), all_groups = groups, edgtype = "LONG_DASH", extra = strtfunc[[x]]$extra[1])
 
         }
 
@@ -2109,7 +2151,7 @@ scriptmapr = function(path) {
   message("Reversing edges")
   if (length(which(edgedata$edgtype == "LONG_DASH")) > 0) {
     dashed = selectEdges(edgedata$SUID[which(edgedata$edgtype == "LONG_DASH")])
-  }
+  } #else {dashed=NULL}
   if (length(which(edgedata$edgtype == "SINEWAVE")) > 0) {
     sinewave = selectEdges(edgedata$SUID[which(edgedata$edgtype == "SINEWAVE")])
   }
@@ -2119,19 +2161,29 @@ scriptmapr = function(path) {
   conds.ifs = selectEdgesAdjacentToSelectedNodes()
   message("color bypass start")
 
-  if (length(conds.ifs) > 0 & length(conds.ifs$edges) > 0) {
+  if (length(conds.ifs) > 0 & length(conds.ifs$edges) > 0 & !is.null(dashed)) {
+    # conds.ifs$edges = unique(c(conds.ifs$edges, dashed$edges))
+    n=which(conds.ifs$edges %in% dashed$edges)
+    if (length(n>0)) {
     conds.ifs$edges = conds.ifs$edges[-c(which(conds.ifs$edges %in% dashed$edges))]
+    }
     setEdgeColorBypass(conds.ifs$edges, "#FED000")
-  }
+
+    }
+
   clearSelection()
   message("color bypass done")
 
   #bypass loop edges colors
   s=selectNodes(c("FOR", "WHILE"), by.col = "name")
   conds.for = selectEdgesAdjacentToSelectedNodes()
-  if (length(conds.for) > 0 & length(conds.for$edges) > 0) {
-    conds.for$edges = conds.for$edges[-c(which(conds.for$edges %in% dashed$edges))]
+  if (length(conds.for) > 0 & length(conds.for$edges) > 0 & !is.null(dashed)) {
+    m=which(conds.for$edges %in% dashed$edges)
+    if (length(m>0)) {
+      conds.for$edges = conds.for$edges[-c(which(conds.for$edges %in% dashed$edges))]
+    }
     setEdgeColorBypass(conds.for$edges, "#ff6633")
+
   }
   clearSelection()
 
