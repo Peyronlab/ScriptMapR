@@ -584,20 +584,43 @@ scriptmapr = function(path) {
   # car$breaks links car to breaks
 
   dollars = lapply(seq_along(xy.list), FUN = function(x, inter) {
+    # print(x)
     str = 1.5
     m = which(xy.list[[x]]$token == "'$'" | xy.list[[x]]$token == "'@'")
     if (length(m) > 0) {
-      if (sum(xy.list[[x]]$text[m - 1] == "]") == 0) {
+      if (sum(xy.list[[x]]$text[m - 1] == "]") == 0) { #no [ in command mixed with @
         cmd = paste(xy.list[[x]]$text[m - 1], "$", xy.list[[x]]$text[m + 1], sep = "")
         make_edge(target = xy.list[[x]]$text[m + 1], attr = "$", source = xy.list[[x]]$text[m - 1], interaction = c("holds"), weight = 1, cmd = cmd, id = make.unique(rep(as.character(x), length(m))), edge_lgth = str, all_groups = groups)
       } else {
         opn = which(xy.list[[x]]$token == "'['" | xy.list[[x]]$token == "LBB")
-        l = list()
-        for (i in seq_len(length(m))) {
-          id = make.unique(rep(as.character(x), length(m)))[i]
-          cmd = paste(paste(xy.list[[x]]$text[opn[i]:(m[i] - 1)], collapse = ""), "$", xy.list[[x]]$text[m[i] + 1], sep = "")
-          l[[i]] = make_edge(target = paste(xy.list[[x]]$text[opn[i]:(m[i] - 1)], collapse = ""), attr = "$", source = xy.list[[x]]$text[m[i] + 1], interaction = c("holds"), weight = 1, cmd = cmd, id = id, edge_lgth = str, all_groups = groups, extra = paste(xy.list[[x]]$text[opn[i] - 1]))
-        }
+        text=paste(xy.list[[x]]$text,collapse = "")
+        fnd=gregexpr("(?<=\\])[\\@|\\$]", text, perl = TRUE)[[1]][1]
+        if (length(opn)==length(m) & length(fnd)==length(m)){ # [ mixed with @ and $ and case ]$
+          l = list()
+          for (i in seq_len(length(m))) {
+            id = make.unique(rep(as.character(x), length(m)))[i]
+            cmd = paste(paste(xy.list[[x]]$text[opn[i]:(m[i] - 1)], collapse = ""), "$", xy.list[[x]]$text[m[i] + 1], sep = "")
+            l[[i]] = make_edge(target = paste(xy.list[[x]]$text[opn[i]:(m[i] - 1)], collapse = ""), attr = "$", source = xy.list[[x]]$text[m[i] + 1], interaction = c("holds"), weight = 1, cmd = cmd, id = id, edge_lgth = str, all_groups = groups, extra = paste(xy.list[[x]]$text[opn[i] - 1]))
+          }
+        } else { #cases brackets and dollars concatenated and not concatenated following each other
+          l = list()
+          j=which(xy.list[[x]]$token%in%c("']'","')'"))
+          j=j[which(xy.list[[x]]$token[j+1]=="'@'"|xy.list[[x]]$token[j+1]=="'$'")]
+          c=1
+          for (i in seq_len(length(j))) {
+            id = make.unique(rep(as.character(x), length(m)))[i]
+            cmd = paste(paste(xy.list[[x]]$text[opn[i]:j[i]], collapse = ""), xy.list[[x]]$text[j[i]+1] , xy.list[[x]]$text[j[i]+2], sep = "")
+            l[[i]] = make_edge(target = paste(xy.list[[x]]$text[opn[i]:j[i]], collapse = ""), attr = xy.list[[x]]$text[j[i]+1], source = xy.list[[x]]$text[j[i]+2], interaction = c("holds"), weight = 1, cmd = cmd, id = id, edge_lgth = str, all_groups = groups, extra = paste(xy.list[[x]]$text[opn[i] - 1]))
+          c=c+1
+            }
+          #check extra
+
+          k=m[which(!xy.list[[x]]$token[m-1]%in%c("']'","')'"))]
+          cmd = paste(xy.list[[x]]$text[k - 1], xy.list[[x]]$text[k], xy.list[[x]]$text[k + 1], sep = "")
+          l=rbind(l,list(make_edge(target = xy.list[[x]]$text[k + 1], attr = xy.list[[x]]$text[k ], source = xy.list[[x]]$text[k - 1], interaction = c("holds"), weight = 1, cmd = cmd, id = make.unique(rep(as.character(x), length(m)))[c:length(m)], edge_lgth = str, all_groups = groups)))
+
+          }
+
         return(bind_rows(l))
       }
     }
@@ -838,7 +861,7 @@ scriptmapr = function(path) {
         variables = c(xy.list[[x]]$text[which(xy.list[[x]]$token %in% c("SYMBOL", target_vars[[x]]))], "\\$")
         attr = gsub(paste("\\b", paste(variables, collapse = "\\b|\\b"), "\\b", sep = ""), ".", attr)
         if (!is.null(brackets[[x]]) & !is.null(brackets[[x]]$extra)) {
-          if (sum(unique(brackets[[x]]$extra) != "") > 0) {
+          if (sum(unique(brackets[[x]]$extra) != "") > 0) { #extra exists in brackets
 
             extra_tmp = brackets[[x]]$extra
           }
@@ -984,12 +1007,16 @@ scriptmapr = function(path) {
           nd.bk = nodes
           if (length(nodes) > 0) {
             # case variable in function
-            extra = ""
-            if (!is.null(target_vars[[x]])) {
+
+            if (is.null(extra_tmp)){extra = ""} else {extra=extra_tmp}
+            if (!is.null(target_vars[[x]]) & extra == "") {
               # case sequence seen var1$var2 link to var2 only
               nodes = nodes[-c(which(nodes %in% unique(c(brackets[[x]]$source, dollars[[x]]$source))))]
+              if (length(nodes)==0){
+                nodes=nd.bk
+                extra=nd.bk
               # nodes=target_vars[[x]] print(x)
-              if (sum(grepl("\\[", target_vars[[x]]), perl = TRUE) > 0) {
+              } else if (sum(grepl("\\[", target_vars[[x]]), perl = TRUE) > 0) {
                 extra = nd.bk[-c(match(nodes, nd.bk))]
               }
             }
@@ -1467,7 +1494,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(simple_assign[[x]]$target[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(simple_assign[[x]]$target[j], id, sep = ".")) {
                   simple_assign[[x]]$target[j] <<- paste(simple_assign[[x]]$target[j], id, sep = ".")
                 }
               }
@@ -1479,7 +1507,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(simple_assign[[x]]$source[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(simple_assign[[x]]$source[j], id, sep = ".")) {
                   simple_assign[[x]]$source[j] <<- paste(simple_assign[[x]]$source[j], id, sep = ".")
                 }
               }
@@ -1495,7 +1524,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(complex_assign[[x]]$target[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(complex_assign[[x]]$target[j], id, sep = ".")) {
                   complex_assign[[x]]$target[j] <<- paste(complex_assign[[x]]$target[j], id, sep = ".")
                 }
               }
@@ -1507,7 +1537,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(complex_assign[[x]]$source[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(complex_assign[[x]]$source[j], id, sep = ".")) {
                   complex_assign[[x]]$source[j] <<- paste(complex_assign[[x]]$source[j], id, sep = ".")
                 }
               }
@@ -1523,7 +1554,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(dollars[[x]]$target[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(dollars[[x]]$target[j], id, sep = ".")) {
                   dollars[[x]]$target[j] <<- paste(dollars[[x]]$target[j], id, sep = ".")
                 }
               }
@@ -1535,7 +1567,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(dollars[[x]]$source[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(dollars[[x]]$source[j], id, sep = ".")) {
                   dollars[[x]]$source[j] <<- paste(dollars[[x]]$source[j], id, sep = ".")
                 }
               }
@@ -1551,7 +1584,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(brackets[[x]]$target[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(brackets[[x]]$target[j], id, sep = ".")) {
                   brackets[[x]]$target[j] <<- paste(brackets[[x]]$target[j], id, sep = ".")
                 }
               }
@@ -1563,7 +1597,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(brackets[[x]]$source[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(brackets[[x]]$source[j], id, sep = ".")) {
                   brackets[[x]]$source[j] <<- paste(brackets[[x]]$source[j], id, sep = ".")
                 }
               }
@@ -1579,7 +1614,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(conditionifs[[x]]$target[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(conditionifs[[x]]$target[j], id, sep = ".")) {
                   conditionifs[[x]]$target[j] <<- paste(conditionifs[[x]]$target[j], id, sep = ".")
                 }
               }
@@ -1591,7 +1627,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(conditionifs[[x]]$source[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp[[id]]$indices[j] == paste(conditionifs[[x]]$source[j], id, sep = ".")) {
                   conditionifs[[x]]$source[j] <<- paste(conditionifs[[x]]$source[j], id, sep = ".")
                 }
               }
@@ -1607,7 +1644,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices[j] == paste(conditionelseifs[[x]]$target[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(conditionelseifs[[x]]$target[j], id, sep = ".")) {
                   conditionelseifs[[x]]$target[j] <<- paste(conditionelseifs[[x]]$target[j], id, sep = ".")
                 }
               }
@@ -1619,7 +1657,8 @@ scriptmapr = function(path) {
                 i = 1
               }
               for (j in i) {
-                if (conditionloop[[id]]$indices == paste(conditionelseifs[[x]]$source[j], id, sep = ".")) {
+                if (!is.na(conditionloop[[id]]$indices[j])){cmp=conditionloop[[id]]$indices[j]} else {cmp=conditionloop[[id]]$indices[1]}
+                if (cmp == paste(conditionelseifs[[x]]$source[j], id, sep = ".")) {
                   conditionelseifs[[x]]$source[j] <<- paste(conditionelseifs[[x]]$source[j], id, sep = ".")
                 }
               }
