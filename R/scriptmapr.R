@@ -459,6 +459,7 @@ scriptmapr = function(path) {
   # extract brackets [,1], [1,2], [1, var] double check maybe/ check if pattern is in function argument
   #return edges
   brackets = lapply(seq_along(xy.list), FUN = function(x) {
+    # print(x)
     str = 1.5
     n = which(xy.list[[x]]$token == "'['")
     imb = FALSE
@@ -498,7 +499,14 @@ scriptmapr = function(path) {
     if (length(n) > 0 && length(n) < 2) {
       m = regexpr("\\[.*\\]", text[1], perl = TRUE)
       m = regexpr("\\[[^\\s]{1,}\\]", text[1], perl = TRUE)
-      src = regexpr("(\\w{0,}[.]{0,})+\\w+\\){0,}(?=\\[[^\\s]{1,}\\])", text[1], perl = TRUE)
+      src = tryCatch({
+         regexpr("(\\w{0,}[.]{0,})+\\w+\\){0,}(?=\\[[^\\s]{1,}\\])", text[1], perl = TRUE)
+      }, warning = function(w) {
+        regexpr('\\w{0,}\\){0,1}(?=\\[[^\\s]{0,}\\])', text[1], perl = TRUE)
+
+      })
+      #
+
       if (src[[1]][1] == -1) {
         return(NULL)
       }
@@ -773,7 +781,7 @@ scriptmapr = function(path) {
 
   #creates links where = is found
   eqquery = lapply(seq_along(xy.list), FUN = function(x) {
-    #print(x)
+    # print(x)
     str = 1.5
     m = which(xy.list[[x]]$token %in% c("EQ_ASSIGN", "LEFT_ASSIGN"))
     n_tmp = which(xy.list[[x]]$token == "SYMBOL_FUNCTION_CALL")
@@ -940,7 +948,10 @@ scriptmapr = function(path) {
             }
             attr_tmp = paste(xy.list[[x]]$text[(m):length(xy.list[[x]]$text)], collapse = "")
             attr = gsub(vars_names, ".", attr_tmp)
+          } else if (length(vars)==0){
+            vars=paste(xy.list[[x]]$text[m+1:(length(xy.list[[x]]$text)-m)],collapse = '')
           }
+
           edge2 = make_edge(target = xy.list[[x]]$text[1], source = vars, interaction = "holds", weight = 1, attr = attr, id = x, cmd = cmd, all_groups = groups)
 
         }
@@ -1839,7 +1850,7 @@ scriptmapr = function(path) {
         c = c + 1
         next
       } else {
-        stop(c)
+        warning(c)
       }
 
     }
